@@ -119,6 +119,7 @@ typedef struct {
     
     uint32_t ihdrSignature = (73 << 24) | (72 << 16) | (68 << 8) | 82;
     uint32_t idatSignature = (73 << 24) | (68 << 16) | (65 << 8) | 84;
+    uint32_t iendSignature = (73 << 24) | (69 << 16) | (78 << 8) | 68;
     
     uint32_t chunkSignature;
     [self.imageData getBytes:&chunkSignature range:NSMakeRange(self.dataIndex, chunkSignatureLength)];
@@ -138,7 +139,19 @@ typedef struct {
     {
         self.dataIndex += chunkLength;
         self.idatChunksRead++;
-        [self evaluateAdam7];
+        NSUInteger passesComplete = [self evaluateCompletedAdam7Passes];
+        if (self.passesComplete != passesComplete)
+        {
+            self.passesComplete = passesComplete;
+            if ([self.delegate respondsToSelector:@selector(imageDataProvider:completedPass:)])
+            {
+                [self.delegate imageDataProvider:self completedPass:self.passesComplete];
+            }
+        }
+    }
+    else if (chunkSignature == iendSignature)
+    {
+        return NO;
     }
     else                                        // Simply skip this chunk
     {
@@ -175,7 +188,7 @@ typedef struct {
     self.dataIndex++;
 }
 
-- (void)evaluateAdam7
+- (NSUInteger)evaluateCompletedAdam7Passes
 {
     uint32_t pass1ChunkCount = ceil(self.ihdrChunk.width / 8.0f) * ceil(self.ihdrChunk.height / 8.0f);
     uint32_t pass2ChunkCount = ceil((self.ihdrChunk.width-4) / 8.0f) * ceil(self.ihdrChunk.height / 8.0f) + pass1ChunkCount;
@@ -185,13 +198,15 @@ typedef struct {
     uint32_t pass6ChunkCount = ceil((self.ihdrChunk.width-1) / 2.0f) * ceil(self.ihdrChunk.height / 2.0f) + pass5ChunkCount;
     uint32_t pass7ChunkCount = self.ihdrChunk.width * self.ihdrChunk.height;
     
-    if (self.idatChunksRead >= pass1ChunkCount && self.passesComplete < 1) self.passesComplete = 1;
-    if (self.idatChunksRead >= pass2ChunkCount && self.passesComplete < 2) self.passesComplete = 2;
-    if (self.idatChunksRead >= pass3ChunkCount && self.passesComplete < 3) self.passesComplete = 3;
-    if (self.idatChunksRead >= pass4ChunkCount && self.passesComplete < 4) self.passesComplete = 4;
-    if (self.idatChunksRead >= pass5ChunkCount && self.passesComplete < 5) self.passesComplete = 5;
-    if (self.idatChunksRead >= pass6ChunkCount && self.passesComplete < 6) self.passesComplete = 6;
-    if (self.idatChunksRead >= pass7ChunkCount && self.passesComplete < 7) self.passesComplete = 7;
+    if (self.idatChunksRead >= pass7ChunkCount) return 7;
+    if (self.idatChunksRead >= pass6ChunkCount) return 6;
+    if (self.idatChunksRead >= pass5ChunkCount) return 5;
+    if (self.idatChunksRead >= pass4ChunkCount) return 4;
+    if (self.idatChunksRead >= pass3ChunkCount) return 3;
+    if (self.idatChunksRead >= pass2ChunkCount) return 2;
+    if (self.idatChunksRead >= pass1ChunkCount) return 1;
+    
+    return 0;
 }
 
 #pragma mark - NSURLConnectionDataDelegate
