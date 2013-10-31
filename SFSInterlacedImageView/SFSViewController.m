@@ -11,6 +11,8 @@
 
 @interface SFSViewController ()
 
+@property (nonatomic, strong) SFSImageDataProvider *dataProvider;
+
 @end
 
 @implementation SFSViewController
@@ -18,8 +20,8 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	SFSImageDataProvider *dataProvider = [[SFSImageDataProvider alloc] initWithImageURL:[[NSBundle mainBundle] URLForResource:@"future" withExtension:@"png"]];
-    [dataProvider start];
+	self.dataProvider = [[SFSImageDataProvider alloc] initWithImageURL:[[NSBundle mainBundle] URLForResource:@"future" withExtension:@"png"]];
+    [self.dataProvider start];
 }
 
 - (void)didReceiveMemoryWarning
