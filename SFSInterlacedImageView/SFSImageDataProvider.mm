@@ -299,10 +299,8 @@ void row_callback(png_structp png_ptr, png_bytep new_row, png_uint_32 row_num, i
     
     if (new_row != NULL && !selfRef.interlacer.generatingImage)
     {
-        NSData *rowData = [[NSData alloc] initWithBytes:row_pointers[row_num] length:width*pixel_depth/8];
-        [selfRef.interlacer updateImageWithRow:row_num data:rowData pass:pass completion:^(UIImage *image, NSError *error) {
-            NSLog(@"received image");
-        }];
+        generate_interlaced_image(row_num, pass);
+        NSLog(@"pass: %i", pass);
     }
     
     /* where old_row is what was displayed for previously for the row. Note that the first pass (pass == 0, really) will completely cover the old row, so the rows do not have to be initialized. After the first pass (and only for interlaced images), you will have to pass the current row, and the function will combine the old row and the new row.  */
@@ -314,6 +312,7 @@ void end_callback(png_structp png_ptr, png_infop info) {
     /* This function is called after the whole image has been read, including any chunks after the image (up to and including the IEND). You will usually have the same info chunk as you had in the header, although some data may have been added to the comments and time fields.  Most people won’t do much here, perhaps setting a flag that marks the image as finished.  */
     printf("processing complete\n");
     file_end=1;
+    generate_interlaced_image(height-1, 6);
 }
 
 /* An example code fragment of how you would initialize the progressive reader in your application. */
@@ -345,6 +344,23 @@ int process_data(png_bytep buffer, png_uint_32 length) {
     /* This one’s new also. Simply give it a chunk of data from the file stream (in order, of course). On machines with segmented memory models machines, don’t give it any more than 28 64K. The library seems to run fine with sizes of 4K. Although you can give it much less if necessary (I assume you can give it chunks of 1 byte, I haven’t tried less then 256 bytes yet). When this function returns, you may want to display any rows that were generated in the row callback if you don’t already do so there.  */
     png_process_data(png_ptr, info_ptr, buffer, length);
     return 0;
+}
+
+void generate_interlaced_image(png_uint_32 row_num, int pass)
+{
+    NSMutableData *allData = [NSMutableData data];
+    for (int i=0; i<height; i++)
+    {
+        NSData *rowData = [[NSData alloc] initWithBytes:row_pointers[i] length:width*pixel_depth/8];
+        [allData appendData:rowData];
+    }
+    
+    [selfRef.interlacer updateImageWithCurrentData:allData lastCompletedRow:row_num pass:pass completion:^(UIImage *image, NSError *error) {
+        if ([selfRef.delegate respondsToSelector:@selector(imageDataProvider:receivedImage:)])
+        {
+            [selfRef.delegate imageDataProvider:selfRef receivedImage:image];
+        }
+    }];
 }
 
 #pragma mark - NSURLConnectionDataDelegate
@@ -399,7 +415,7 @@ int process_data(png_bytep buffer, png_uint_32 length) {
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
-    self.interlacer = nil;
+//    self.interlacer = nil;
 }
 
 @end

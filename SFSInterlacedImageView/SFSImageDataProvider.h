@@ -27,5 +27,6 @@
 
 - (void)imageDataProvider:(SFSImageDataProvider *)dataProvider completedPass:(NSUInteger)passNumber;
 - (void)imageDataProvider:(SFSImageDataProvider *)dataProvider failedWithError:(NSError *)error;
+- (void)imageDataProvider:(SFSImageDataProvider *)dataProvider receivedImage:(UIImage *)image;
 
 @end
