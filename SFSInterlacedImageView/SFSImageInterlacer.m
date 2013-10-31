@@ -17,7 +17,10 @@
 
 - (void)updateImageWithRow:(NSUInteger)row data:(NSData *)rowData completion:(SFSImageInterlacerCompletionBlock)completion
 {
-    
+    if (rowData.length > 4)
+    {
+        
+    }
 }
 
 @end

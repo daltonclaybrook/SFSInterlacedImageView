@@ -403,7 +403,14 @@ void row_callback(png_structp png_ptr, png_bytep new_row,
     else if (new_row != NULL)
     {
         [rowDataArray replaceObjectAtIndex:row_num withObject:[NSValue valueWithPointer:new_row]];
+        old_row = new_row;
     }
+    
+    NSData *rowData = [[NSData alloc] initWithBytes:old_row length:sizeof(old_row)];
+    [selfRef.interlacer updateImageWithRow:row_num data:rowData completion:^(UIImage *image, NSError *error) {
+        // Do Something;
+    }];
+    
 //    if (new_row != NULL)
 //        png_progressive_combine_row(png_ptr, old_row, new_row);
 //    if (old_row != NULL)
