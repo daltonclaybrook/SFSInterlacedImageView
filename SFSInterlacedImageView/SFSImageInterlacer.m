@@ -8,19 +8,12 @@
 
 #import "SFSImageInterlacer.h"
 
-//static int starting_row[7]  = { 0, 0, 4, 0, 2, 0, 1 };
-//static int starting_col[7]  = { 0, 4, 0, 2, 0, 1, 0 };
-//static int row_increment[7] = { 8, 8, 4, 4, 2, 2, 1 };
-//static int col_increment[7] = { 8, 4, 4, 2, 2, 1, 1 };
-//static int block_height[7]  = { 8, 8, 4, 4, 2, 2, 1 };
-//static int block_width[7]   = { 8, 4, 4, 2, 2, 1, 1 };
-
-int starting_row[7]  = { 0, 0, 4, 0, 2, 0, 1 };
-int starting_col[7]  = { 0, 4, 0, 2, 0, 1, 0 };
-int row_increment[7] = { 8, 8, 8, 4, 4, 2, 2 };
-int col_increment[7] = { 8, 8, 4, 4, 2, 2, 1 };
-int block_height[7]  = { 8, 8, 8, 4, 4, 2, 1 };
-int block_width[7]   = { 8, 4, 4, 2, 2, 1, 1 };
+static int starting_row[7]  = { 0, 0, 4, 0, 2, 0, 1 };
+static int starting_col[7]  = { 0, 4, 0, 2, 0, 1, 0 };
+static int row_increment[7] = { 8, 8, 4, 4, 2, 2, 1 };
+static int col_increment[7] = { 8, 4, 4, 2, 2, 1, 1 };
+static int block_height[7]  = { 8, 8, 4, 4, 2, 2, 1 };
+static int block_width[7]   = { 8, 4, 4, 2, 2, 1, 1 };
 
 static NSUInteger bytesPerPixel = 4;     // Hardcoded to 4: R G B A
 
@@ -144,14 +137,9 @@ static NSUInteger bytesPerPixel = 4;     // Hardcoded to 4: R G B A
             
         for (int x=0; x<self.imageSize.width; x++)
         {
-            NSUInteger rowPass = (y <= row) ? pass : pass-1;
-            NSUInteger xIncrement = col_increment[rowPass];
-            NSUInteger yIncrement = row_increment[rowPass];
             NSUInteger offset = (y*self.imageSize.width*currentBytesPerPixel) + (x*currentBytesPerPixel);
-            CGSize blockSize;
-            blockSize.width = block_width[rowPass];
-//            blockSize.height = (y < row) ? block_height[rowPass] : block_height[rowPass-1];
-            blockSize.height = block_height[rowPass];
+//            CGSize blockSize = CGSizeMake(block_width[pass], block_height[pass]);
+            CGSize blockSize = CGSizeMake(1, 1);
             
             uint8_t red, green, blue;
             uint8_t alpha = 255;
@@ -161,7 +149,7 @@ static NSUInteger bytesPerPixel = 4;     // Hardcoded to 4: R G B A
             [data getBytes:&blue range:NSMakeRange(offset+2, 1)];
             if (hasAlpha) [data getBytes:&alpha range:NSMakeRange(offset+3, 1)];
             
-            [self setRed:red green:green blue:blue alpha:alpha atPoint:CGPointMake(x * xIncrement, y * yIncrement) blockSize:blockSize];
+            [self setRed:red green:green blue:blue alpha:alpha atPoint:CGPointMake(x /** xIncrement*/, y /** yIncrement*/) blockSize:blockSize];
         }
     }
     

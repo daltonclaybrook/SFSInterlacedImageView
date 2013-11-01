@@ -265,6 +265,7 @@ void info_callback(png_structp png_ptr, png_infop info) {
         row_pointers[n] = (png_bytep)malloc(info->rowbytes);
     }
     
+    png_set_interlace_handling(png_ptr);
     png_start_read_image(png_ptr);
 }
 
@@ -330,7 +331,6 @@ int initialize_png_reader() {
     }
     /* This one’s new. You can provide functions to be called when the header info is valid, when each row is completed, and when the image is finished. If you aren’t using all functions, you can specify NULL parameters. Even when all three functions are NULL, you need to call png_set_progressive_read_fn(). You can use any struct as the user_ptr (cast to a void pointer for the function call), and retrieve the pointer from inside the callbacks using the function png_get_progressive_ptr(png_ptr); which will return a void pointer, which you have to cast appropriately.  */
     
-    png_set_interlace_handling(png_ptr);
     png_set_progressive_read_fn(png_ptr, (void *)NULL, info_callback, row_callback, end_callback);
     return 0;
 }
