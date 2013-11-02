@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BE527D8A181A0BC4005145FF /* NSData+Zlib.m in Sources */ = {isa = PBXBuildFile; fileRef = BE527D89181A0BC4005145FF /* NSData+Zlib.m */; };
-		BE527D8D181A18D0005145FF /* NSData+Gzip.m in Sources */ = {isa = PBXBuildFile; fileRef = BE527D8C181A18D0005145FF /* NSData+Gzip.m */; };
 		BE527D8F181A1AA5005145FF /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BE527D8E181A1AA5005145FF /* libz.dylib */; };
 		BE7541A61814724C00F952FA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE7541A51814724C00F952FA /* Foundation.framework */; };
 		BE7541A81814724C00F952FA /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE7541A71814724C00F952FA /* CoreGraphics.framework */; };
@@ -29,7 +27,6 @@
 		BE7541E3181472AD00F952FA /* SFSImageInterlacer.m in Sources */ = {isa = PBXBuildFile; fileRef = BE7541E2181472AD00F952FA /* SFSImageInterlacer.m */; };
 		BE7541E6181472CF00F952FA /* SFSImageDataProvider.mm in Sources */ = {isa = PBXBuildFile; fileRef = BE7541E5181472CF00F952FA /* SFSImageDataProvider.mm */; };
 		BE7541E81814778000F952FA /* future.png in Resources */ = {isa = PBXBuildFile; fileRef = BE7541E71814778000F952FA /* future.png */; };
-		BE7541EC181479DB00F952FA /* joker.png in Resources */ = {isa = PBXBuildFile; fileRef = BE7541EB181479DB00F952FA /* joker.png */; };
 		BEBAD3621820022E00225EF8 /* libpng.m in Sources */ = {isa = PBXBuildFile; fileRef = BEBAD3481820022E00225EF8 /* libpng.m */; };
 		BEBAD3631820022E00225EF8 /* LICENSE.libpng in Resources */ = {isa = PBXBuildFile; fileRef = BEBAD3491820022E00225EF8 /* LICENSE.libpng */; };
 		BEBAD3641820022E00225EF8 /* png.c in Sources */ = {isa = PBXBuildFile; fileRef = BEBAD34A1820022E00225EF8 /* png.c */; };
@@ -61,10 +58,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		BE527D88181A0BC4005145FF /* NSData+Zlib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+Zlib.h"; sourceTree = "<group>"; };
-		BE527D89181A0BC4005145FF /* NSData+Zlib.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+Zlib.m"; sourceTree = "<group>"; };
-		BE527D8B181A18D0005145FF /* NSData+Gzip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+Gzip.h"; sourceTree = "<group>"; };
-		BE527D8C181A18D0005145FF /* NSData+Gzip.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+Gzip.m"; sourceTree = "<group>"; };
 		BE527D8E181A1AA5005145FF /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		BE7541A21814724C00F952FA /* SFSInterlacedImageView.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SFSInterlacedImageView.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE7541A51814724C00F952FA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -93,7 +86,6 @@
 		BE7541E4181472CF00F952FA /* SFSImageDataProvider.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; path = SFSImageDataProvider.h; sourceTree = "<group>"; };
 		BE7541E5181472CF00F952FA /* SFSImageDataProvider.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SFSImageDataProvider.mm; sourceTree = "<group>"; };
 		BE7541E71814778000F952FA /* future.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = future.png; sourceTree = "<group>"; };
-		BE7541EB181479DB00F952FA /* joker.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = joker.png; sourceTree = "<group>"; };
 		BEBAD3461820022E00225EF8 /* libpng-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "libpng-Prefix.pch"; sourceTree = "<group>"; };
 		BEBAD3471820022E00225EF8 /* libpng.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libpng.h; sourceTree = "<group>"; };
 		BEBAD3481820022E00225EF8 /* libpng.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = libpng.m; sourceTree = "<group>"; };
@@ -193,11 +185,6 @@
 		BE7541AB1814724C00F952FA /* SFSInterlacedImageView */ = {
 			isa = PBXGroup;
 			children = (
-				BE527D8B181A18D0005145FF /* NSData+Gzip.h */,
-				BE527D8C181A18D0005145FF /* NSData+Gzip.m */,
-				BE527D88181A0BC4005145FF /* NSData+Zlib.h */,
-				BE527D89181A0BC4005145FF /* NSData+Zlib.m */,
-				BE7541EB181479DB00F952FA /* joker.png */,
 				BE7541E71814778000F952FA /* future.png */,
 				BE7541DD1814725A00F952FA /* ImageView */,
 				BE7541B41814724C00F952FA /* SFSAppDelegate.h */,
@@ -367,7 +354,6 @@
 				BE7541E81814778000F952FA /* future.png in Resources */,
 				BE7541BC1814724C00F952FA /* Main_iPad.storyboard in Resources */,
 				BE7541C11814724C00F952FA /* Images.xcassets in Resources */,
-				BE7541EC181479DB00F952FA /* joker.png in Resources */,
 				BEBAD3631820022E00225EF8 /* LICENSE.libpng in Resources */,
 				BE7541B91814724C00F952FA /* Main_iPhone.storyboard in Resources */,
 				BE7541B01814724C00F952FA /* InfoPlist.strings in Resources */,
@@ -390,7 +376,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				BEBAD36B1820022E00225EF8 /* pngrtran.c in Sources */,
-				BE527D8D181A18D0005145FF /* NSData+Gzip.m in Sources */,
 				BEBAD3711820022E00225EF8 /* pngwrite.c in Sources */,
 				BE7541E01814726F00F952FA /* SFSInterlacedImageView.m in Sources */,
 				BEBAD3721820022E00225EF8 /* pngwtran.c in Sources */,
@@ -404,7 +389,6 @@
 				BEBAD36A1820022E00225EF8 /* pngrio.c in Sources */,
 				BEBAD3651820022E00225EF8 /* pngerror.c in Sources */,
 				BEBAD36D1820022E00225EF8 /* pngset.c in Sources */,
-				BE527D8A181A0BC4005145FF /* NSData+Zlib.m in Sources */,
 				BEBAD3681820022E00225EF8 /* pngpread.c in Sources */,
 				BEBAD3691820022E00225EF8 /* pngread.c in Sources */,
 				BEBAD3731820022E00225EF8 /* pngwutil.c in Sources */,

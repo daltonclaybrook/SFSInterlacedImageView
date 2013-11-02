@@ -14,7 +14,7 @@
 
 @property (nonatomic, weak) id<SFSImageDataProviderDelegate> delegate;
 @property (nonatomic, strong, readonly) NSURL *imageURL;
-@property (nonatomic, strong, readonly) NSData *imageData;
+@property (nonatomic) NSTimeInterval minimumImageFetchInterval;
 
 - (instancetype)initWithImageURL:(NSURL *)url;
 - (void)start;
@@ -25,7 +25,7 @@
 @protocol SFSImageDataProviderDelegate <NSObject>
 @optional
 
-- (void)imageDataProvider:(SFSImageDataProvider *)dataProvider completedPass:(NSUInteger)passNumber;
+- (void)imageDataProviderCompletedLoading:(SFSImageDataProvider *)dataProvider;
 - (void)imageDataProvider:(SFSImageDataProvider *)dataProvider failedWithError:(NSError *)error;
 - (void)imageDataProvider:(SFSImageDataProvider *)dataProvider receivedImage:(UIImage *)image;
 

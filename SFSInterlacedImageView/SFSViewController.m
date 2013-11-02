@@ -7,12 +7,12 @@
 //
 
 #import "SFSViewController.h"
-#import "SFSImageDataProvider.h"
+#import "SFSInterlacedImageView.h"
 
-@interface SFSViewController () <SFSImageDataProviderDelegate>
+@interface SFSViewController () <SFSInterlacedImageViewDelegate>
 
-@property (nonatomic, strong) SFSImageDataProvider *dataProvider;
-@property (strong, nonatomic) IBOutlet UIImageView *imageView;
+@property (strong, nonatomic) IBOutlet SFSInterlacedImageView *imageView;
+@property (weak, nonatomic) IBOutlet UILabel *loadingLabel;
 
 @end
 
@@ -21,10 +21,8 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-//	self.dataProvider = [[SFSImageDataProvider alloc] initWithImageURL:[[NSBundle mainBundle] URLForResource:@"future" withExtension:@"png"]];
-    self.dataProvider = [[SFSImageDataProvider alloc] initWithImageURL:[NSURL URLWithString:@"http://s24.postimg.org/kimjbbmw5/future.png"]];
-    self.dataProvider.delegate = self;
-    [self.dataProvider start];
+    self.imageView.delegate = self;
+    self.imageView.imageURL = [NSURL URLWithString:@"http://daltonclaybrook.com/future.png"];
 }
 
 - (void)didReceiveMemoryWarning
@@ -33,9 +31,22 @@
     // Dispose of any resources that can be recreated.
 }
 
-- (void)imageDataProvider:(SFSImageDataProvider *)dataProvider receivedImage:(UIImage *)image
+- (IBAction)restartTapped:(id)sender
 {
-    self.imageView.image = image;
+    self.loadingLabel.text = @"Loading";
+    self.imageView.imageURL = [NSURL URLWithString:@"http://daltonclaybrook.com/future.png"];
+}
+
+#pragma mark - SFSInterlacedImageViewDelegate
+
+- (void)interlacedImageViewFinishedLoading:(SFSInterlacedImageView *)imageView
+{
+    self.loadingLabel.text = @"Finished";
+}
+
+- (void)interlacedImageView:(SFSInterlacedImageView *)imageView failedWithError:(NSError *)error
+{
+    self.loadingLabel.text = @"Failed";
 }
 
 @end

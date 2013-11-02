@@ -7,25 +7,94 @@
 //
 
 #import "SFSInterlacedImageView.h"
+#import "SFSImageDataProvider.h"
+
+static NSTimeInterval const transitionDuration = 1.0f;
+
+@interface SFSInterlacedImageView () <SFSImageDataProviderDelegate>
+
+@property (nonatomic, strong) SFSImageDataProvider *dataProvider;
+@property (nonatomic) BOOL transitioning;
+@property (nonatomic, strong) UIImage *nextImage;
+
+@end
 
 @implementation SFSInterlacedImageView
 
-- (id)initWithFrame:(CGRect)frame
+#pragma mark - View Lifecycle
+
+- (void)awakeFromNib
 {
-    self = [super initWithFrame:frame];
-    if (self) {
-        // Initialization code
-    }
-    return self;
+    [super awakeFromNib];
+    _transitioning = NO;
 }
 
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect
+#pragma mark - Properties
+
+- (void)setImageURL:(NSURL *)imageURL
 {
-    // Drawing code
+    _imageURL = imageURL;
+    self.image = nil;
+    
+    [self.dataProvider cancel];
+    [self.dataProvider start];
 }
-*/
+
+- (SFSImageDataProvider *)dataProvider
+{
+    if (!_dataProvider)
+    {
+        _dataProvider = [[SFSImageDataProvider alloc] initWithImageURL:self.imageURL];
+        _dataProvider.delegate = self;
+    }
+    return _dataProvider;
+}
+
+#pragma mark - Private
+
+- (void)animateTransition
+{
+    UIImage *transitionImage = self.nextImage;
+    self.nextImage = nil;
+    
+    if (transitionImage)
+    {
+        [UIView transitionWithView:self duration:transitionDuration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+            self.image = transitionImage;
+        } completion:^(BOOL finished) {
+            if (finished && self.nextImage)
+            {
+                [self animateTransition];
+            }
+        }];
+    }
+}
+
+#pragma mark - SFSImageDataProviderDelegate
+
+- (void)imageDataProviderCompletedLoading:(SFSImageDataProvider *)dataProvider
+{
+    if ([self.delegate respondsToSelector:@selector(interlacedImageViewFinishedLoading:)])
+    {
+        [self.delegate interlacedImageViewFinishedLoading:self];
+    }
+}
+
+- (void)imageDataProvider:(SFSImageDataProvider *)dataProvider failedWithError:(NSError *)error
+{
+    if ([self.delegate respondsToSelector:@selector(interlacedImageView:failedWithError:)])
+    {
+        [self.delegate interlacedImageView:self failedWithError:error];
+    }
+}
+
+- (void)imageDataProvider:(SFSImageDataProvider *)dataProvider receivedImage:(UIImage *)image
+{
+    self.nextImage = image;
+    if (!self.transitioning)
+    {
+        [self animateTransition];
+    }
+}
 
 @end

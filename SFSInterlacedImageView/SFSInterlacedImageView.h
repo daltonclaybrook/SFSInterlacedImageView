@@ -8,6 +8,19 @@
 
 #import <UIKit/UIKit.h>
 
+@protocol SFSInterlacedImageViewDelegate;
+
 @interface SFSInterlacedImageView : UIImageView
+
+@property (nonatomic, strong) NSURL *imageURL;
+@property (nonatomic, weak) id<SFSInterlacedImageViewDelegate> delegate;
+
+@end
+
+@protocol SFSInterlacedImageViewDelegate <NSObject>
+@optional
+
+- (void)interlacedImageViewFinishedLoading:(SFSInterlacedImageView *)imageView;
+- (void)interlacedImageView:(SFSInterlacedImageView *)imageView failedWithError:(NSError *)error;
 
 @end

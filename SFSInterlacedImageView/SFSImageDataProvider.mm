@@ -25,12 +25,12 @@ typedef struct {
 
 @property (nonatomic, strong) NSURLConnection *activeConnection;
 @property (nonatomic, strong) SFSImageInterlacer *interlacer;
+@property (nonatomic, strong) NSDate *lastFetchDate;
+@property (nonatomic) BOOL finalImageBatched;
 
 @end
 
 @implementation SFSImageDataProvider
-
-@synthesize imageData = _mutableData;
 
 #pragma mark - Initializers
 
@@ -41,6 +41,9 @@ typedef struct {
     {
         selfRef = self;
         _imageURL = url;
+        _minimumImageFetchInterval = 0.7f;
+        _lastFetchDate = [NSDate distantPast];
+        _finalImageBatched = NO;
     }
     return self;
 }
@@ -58,9 +61,16 @@ typedef struct {
 
 - (void)cancel
 {
-    [self.activeConnection cancel];
-    self.activeConnection = nil;
+    if (self.activeConnection)
+    {
+        [self.activeConnection cancel];
+        self.activeConnection = nil;
+    }
 }
+
+#pragma mark - Private
+
+//- (void)completeLoading
 
 #pragma mark - libpng C functions
 
@@ -118,10 +128,11 @@ void row_callback(png_structp png_ptr, png_bytep new_row, png_uint_32 row_num, i
     
     png_progressive_combine_row(png_ptr, row_pointers[row_num], new_row);
     
-    if (new_row != NULL && !selfRef.interlacer.generatingImage)
+    NSTimeInterval timeSinceLastFetch = [[NSDate date] timeIntervalSinceDate:selfRef.lastFetchDate];
+    if (timeSinceLastFetch > selfRef.minimumImageFetchInterval && !selfRef.interlacer.generatingImage && pass > 0)
     {
-        generate_interlaced_image(row_num, pass);
-        NSLog(@"pass: %i", pass);
+        selfRef.lastFetchDate = [NSDate date];
+        generate_interlaced_image(pass, NO);
     }
     
     /* where old_row is what was displayed for previously for the row. Note that the first pass (pass == 0, really) will completely cover the old row, so the rows do not have to be initialized. After the first pass (and only for interlaced images), you will have to pass the current row, and the function will combine the old row and the new row.  */
@@ -133,7 +144,17 @@ void end_callback(png_structp png_ptr, png_infop info) {
     /* This function is called after the whole image has been read, including any chunks after the image (up to and including the IEND). You will usually have the same info chunk as you had in the header, although some data may have been added to the comments and time fields.  Most people won’t do much here, perhaps setting a flag that marks the image as finished.  */
     printf("processing complete\n");
     file_end=1;
-    generate_interlaced_image(height-1, 6);
+    
+    if (!selfRef.interlacer.generatingImage)
+    {
+        generate_interlaced_image(6, YES);
+        png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+        free(row_pointers);
+    }
+    else
+    {
+        selfRef.finalImageBatched = YES;
+    }
 }
 
 /* An example code fragment of how you would initialize the progressive reader in your application. */
@@ -166,7 +187,7 @@ int process_data(png_bytep buffer, png_uint_32 length) {
     return 0;
 }
 
-void generate_interlaced_image(png_uint_32 row_num, int pass)
+void generate_interlaced_image(int pass, bool final)
 {
     NSMutableData *allData = [NSMutableData data];
     for (int i=0; i<height; i++)
@@ -175,10 +196,26 @@ void generate_interlaced_image(png_uint_32 row_num, int pass)
         [allData appendData:rowData];
     }
     
-    [selfRef.interlacer updateImageWithCurrentData:allData pass:pass completion:^(UIImage *image, NSError *error) {
-        if ([selfRef.delegate respondsToSelector:@selector(imageDataProvider:receivedImage:)])
+    __typeof__(selfRef) __weak weakSelf = selfRef;
+    
+    [weakSelf.interlacer updateImageWithCurrentData:allData pass:pass completion:^(UIImage *image, NSError *error) {
+        if ([weakSelf.delegate respondsToSelector:@selector(imageDataProvider:receivedImage:)])
         {
-            [selfRef.delegate imageDataProvider:selfRef receivedImage:image];
+            [weakSelf.delegate imageDataProvider:weakSelf receivedImage:image];
+            
+            if (weakSelf.finalImageBatched)
+            {
+                weakSelf.finalImageBatched = NO;
+                generate_interlaced_image(pass, YES);
+                png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+                free(row_pointers);
+                weakSelf.interlacer = nil;
+            }
+        }
+        
+        if (final && [weakSelf.delegate respondsToSelector:@selector(imageDataProviderCompletedLoading:)])
+        {
+            [weakSelf.delegate imageDataProviderCompletedLoading:weakSelf];
         }
     }];
 }
@@ -188,6 +225,18 @@ void generate_interlaced_image(png_uint_32 row_num, int pass)
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
 {
     self.interlacer = nil;
+    self.activeConnection = nil;
+    png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+    
+    if (row_pointers != NULL)
+    {
+        free(row_pointers);
+    }
+    
+    if ([self.delegate respondsToSelector:@selector(imageDataProvider:failedWithError:)])
+    {
+        [self.delegate imageDataProvider:self failedWithError:error];
+    }
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
@@ -206,7 +255,7 @@ void generate_interlaced_image(png_uint_32 row_num, int pass)
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
-    self.interlacer = nil;
+    self.activeConnection = nil;
 }
 
 @end
