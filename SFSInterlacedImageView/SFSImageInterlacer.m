@@ -8,13 +8,7 @@
 
 #import "SFSImageInterlacer.h"
 
-static int starting_row[7]  = { 0, 0, 4, 0, 2, 0, 1 };
-static int starting_col[7]  = { 0, 4, 0, 2, 0, 1, 0 };
-static int row_increment[7] = { 8, 8, 4, 4, 2, 2, 1 };
-static int col_increment[7] = { 8, 4, 4, 2, 2, 1, 1 };
-static int block_height[7]  = { 8, 8, 4, 4, 2, 2, 1 };
 static int block_width[7]   = { 8, 4, 4, 2, 2, 1, 1 };
-
 static NSUInteger bytesPerPixel = 4;     // Hardcoded to 4: R G B A
 
 @interface SFSImageInterlacer ()
@@ -38,80 +32,17 @@ static NSUInteger bytesPerPixel = 4;     // Hardcoded to 4: R G B A
         _generatingImage = NO;
         _imageSize = size;
         _pixelDepth = depth;
-        _imageDataBuffer = (char *)malloc(size.width*size.height*bytesPerPixel);
     }
     return self;
 }
 
-- (void)dealloc
-{
-    free(_imageDataBuffer);
-}
-
-- (void)updateImageWithRow:(NSUInteger)row data:(NSData *)rowData pass:(NSUInteger)pass completion:(SFSImageInterlacerCompletionBlock)completion
+- (void)updateImageWithCurrentData:(NSData *)data pass:(NSUInteger)pass completion:(SFSImageInterlacerCompletionBlock)completion
 {
     self.generatingImage = YES;
     
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
         
-        [self updateImageWithRow:row data:rowData pass:pass];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            
-            self.generatingImage = NO;
-            if (completion)
-                completion(self.currentImage, nil);     // Currently not handling errors.
-        });
-    });
-}
-
-#pragma mark - Private
-
-- (void)updateImageWithRow:(NSUInteger)row data:(NSData *)rowData pass:(NSUInteger)pass
-{
-    NSUInteger xIncrement = col_increment[pass];
-    NSUInteger currentBytesPerPixel = self.pixelDepth/8;
-    BOOL hasAlpha = (currentBytesPerPixel == 4);
-    
-    for (int x=0; x<self.imageSize.width; x++)
-    {
-        NSUInteger xOffset = x*currentBytesPerPixel;
-        uint8_t red, green, blue;
-        uint8_t alpha = 255;
-        
-        [rowData getBytes:&red range:NSMakeRange(xOffset, 1)];
-        [rowData getBytes:&green range:NSMakeRange(xOffset+1, 1)];
-        [rowData getBytes:&blue range:NSMakeRange(xOffset+2, 1)];
-        if (hasAlpha) [rowData getBytes:&alpha range:NSMakeRange(xOffset+3, 1)];
-        
-//        [self setRed:red green:green blue:blue alpha:alpha atPoint:CGPointMake(x * xIncrement, row) adam7Pass:pass];
-    }
-    
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-    CGContextRef bitmapContext = CGBitmapContextCreate(
-                                                       _imageDataBuffer,
-                                                       self.imageSize.width,
-                                                       self.imageSize.height,
-                                                       8, // bitsPerComponent
-                                                       bytesPerPixel*self.imageSize.width, // bytesPerRow
-                                                       colorSpace,
-                                                       (CGBitmapInfo)kCGImageAlphaPremultipliedLast);
-    
-    CFRelease(colorSpace);
-    
-    CGImageRef cgImage = CGBitmapContextCreateImage(bitmapContext);
-    self.currentImage = [[UIImage alloc] initWithCGImage:cgImage];
-    
-    CFRelease(cgImage);
-    CFRelease(bitmapContext);
-}
-
-- (void)updateImageWithCurrentData:(NSData *)data lastCompletedRow:(NSUInteger)row pass:(NSUInteger)pass completion:(SFSImageInterlacerCompletionBlock)completion
-{
-    self.generatingImage = YES;
-    
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-        
-        UIImage *image = [self updateImageWithCurrentData:data lastCompletedRow:row pass:pass];
+        UIImage *image = [self updateImageWithCurrentData:data pass:pass];
         dispatch_async(dispatch_get_main_queue(), ^{
             
             self.generatingImage = NO;
@@ -121,25 +52,21 @@ static NSUInteger bytesPerPixel = 4;     // Hardcoded to 4: R G B A
     });
 }
 
-- (UIImage *)updateImageWithCurrentData:(NSData *)data lastCompletedRow:(NSUInteger)row pass:(NSUInteger)pass
+#pragma mark - Private
+
+- (UIImage *)updateImageWithCurrentData:(NSData *)data pass:(NSUInteger)pass
 {
-    // If pass == 2, all rows <= 'row' have data for pass 2 and all rows after have data for pass 1.
-    
     NSUInteger currentBytesPerPixel = self.pixelDepth/8;
     BOOL hasAlpha = (currentBytesPerPixel == 4);
+    CGSize passImageSize = CGSizeMake(floorf(self.imageSize.width/(float)block_width[pass]), floorf(self.imageSize.height/(float)block_width[pass]));
+    char *buffer = (char *)malloc(passImageSize.width*passImageSize.height*bytesPerPixel);
     
-    for (int y=0; y<self.imageSize.height; y++)
+    for (int y=0; y<passImageSize.height; y++)
     {
-        if (y>row && pass == 0)
+        for (int x=0; x<passImageSize.width; x++)
         {
-            break;
-        }
-            
-        for (int x=0; x<self.imageSize.width; x++)
-        {
-            NSUInteger offset = (y*self.imageSize.width*currentBytesPerPixel) + (x*currentBytesPerPixel);
-//            CGSize blockSize = CGSizeMake(block_width[pass], block_height[pass]);
-            CGSize blockSize = CGSizeMake(1, 1);
+            NSUInteger offset = (y*self.imageSize.width*block_width[pass]*currentBytesPerPixel) + (x*block_width[pass]*currentBytesPerPixel);
+            NSUInteger bufferOffset = (y*passImageSize.width*bytesPerPixel) + (x*bytesPerPixel);
             
             uint8_t red, green, blue;
             uint8_t alpha = 255;
@@ -149,17 +76,20 @@ static NSUInteger bytesPerPixel = 4;     // Hardcoded to 4: R G B A
             [data getBytes:&blue range:NSMakeRange(offset+2, 1)];
             if (hasAlpha) [data getBytes:&alpha range:NSMakeRange(offset+3, 1)];
             
-            [self setRed:red green:green blue:blue alpha:alpha atPoint:CGPointMake(x /** xIncrement*/, y /** yIncrement*/) blockSize:blockSize];
+            buffer[bufferOffset] = red;
+            buffer[bufferOffset+1] = green;
+            buffer[bufferOffset+2] = blue;
+            buffer[bufferOffset+3] = alpha;
         }
     }
     
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
     CGContextRef bitmapContext = CGBitmapContextCreate(
-                                                       _imageDataBuffer,
-                                                       self.imageSize.width,
-                                                       self.imageSize.height,
+                                                       buffer,
+                                                       passImageSize.width,
+                                                       passImageSize.height,
                                                        8, // bitsPerComponent
-                                                       bytesPerPixel*self.imageSize.width, // bytesPerRow
+                                                       bytesPerPixel*passImageSize.width, // bytesPerRow
                                                        colorSpace,
                                                        (CGBitmapInfo)kCGImageAlphaPremultipliedLast);
     
@@ -170,28 +100,9 @@ static NSUInteger bytesPerPixel = 4;     // Hardcoded to 4: R G B A
     
     CFRelease(cgImage);
     CFRelease(bitmapContext);
+    free(buffer);
     
     return finalizedImage;
-}
-
-- (void)setRed:(uint8_t)red green:(uint8_t)green blue:(uint8_t)blue alpha:(uint8_t)alpha atPoint:(CGPoint)point blockSize:(CGSize)blockSize
-{
-    for (int y=point.y; y<point.y+blockSize.height; y++)
-    {
-        for (int x=point.x; x<point.x+blockSize.height; x++)
-        {
-            if ((x >= self.imageSize.width) || (y >= self.imageSize.height))
-            {
-                break;
-            }
-            
-            NSUInteger offset = (y*self.imageSize.width*bytesPerPixel) + (x*bytesPerPixel);
-            _imageDataBuffer[offset] = red;
-            _imageDataBuffer[offset+1] = green;
-            _imageDataBuffer[offset+2] = blue;
-            _imageDataBuffer[offset+3] = alpha;
-        }
-    }
 }
 
 @end

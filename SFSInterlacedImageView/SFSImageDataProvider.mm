@@ -21,22 +21,9 @@ typedef struct {
     uint8_t interlaceMethod;
 } IHDRChunk;
 
-@interface SFSImageDataProvider () <NSURLConnectionDataDelegate> {
-    NSMutableData *_mutableData;
-    png_structp _png_ptr;
-    png_infop _png_info;
-}
+@interface SFSImageDataProvider () <NSURLConnectionDataDelegate>
 
 @property (nonatomic, strong) NSURLConnection *activeConnection;
-@property (nonatomic) BOOL interlacingConfirmed;
-
-@property (nonatomic, assign) NSUInteger dataIndex;
-@property (nonatomic, assign) IHDRChunk ihdrChunk;
-@property (nonatomic, assign) NSUInteger idatChunksRead;
-@property (nonatomic, assign) NSUInteger passesComplete;
-@property (nonatomic, strong) NSMutableArray *dataChunks;
-@property (nonatomic, strong) NSMutableData *chunkData;
-@property (nonatomic, strong) NSMutableArray *rowDataArray;     // Contains a number of NSMutableData objects representing each row.
 @property (nonatomic, strong) SFSImageInterlacer *interlacer;
 
 @end
@@ -54,10 +41,6 @@ typedef struct {
     {
         selfRef = self;
         _imageURL = url;
-        _mutableData = [[NSMutableData alloc] init];
-        _dataChunks = [[NSMutableArray alloc] init];
-        _chunkData = [[NSMutableData alloc] init];
-        _rowDataArray = [[NSMutableArray alloc] init];
     }
     return self;
 }
@@ -68,8 +51,8 @@ typedef struct {
 {
     NSAssert(_imageURL, @"Image URL must not be nil");
     
-    _interlacingConfirmed = NO;
-    NSURLRequest *request = [[NSURLRequest alloc] initWithURL:self.imageURL];
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:self.imageURL];
+    request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
     _activeConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:YES];
 }
 
@@ -77,164 +60,6 @@ typedef struct {
 {
     [self.activeConnection cancel];
     self.activeConnection = nil;
-}
-
-#pragma mark - Private
-
-- (NSError *)advanceDataIndexPastChunks
-{
-    if (self.imageData.length < 8) return nil;      // Haven't received the first 8 bytes, which is the signature
-    if (self.dataIndex == 0 && ![self readSignature])
-    {
-        return [[NSError alloc] init];              // Change this.
-    }
-    
-    NSError *error = nil;
-    while ([self readNextChunkWithError:&error]);
-    return error;
-}
-
-- (BOOL)readSignature
-{
-    uint8_t signature[] = { 137, 80, 78, 71, 13, 10, 26, 10 };  // PNG Signature
-    for (int i=0; i<8; i++)
-    {
-        uint8_t byte;
-        [self.imageData getBytes:&byte range:NSMakeRange(i, 1)];
-        if (byte != signature[i])
-        {
-            return NO;
-        }
-    }
-    
-    self.dataIndex = 8;
-    return YES;
-}
-
-- (BOOL)readNextChunkWithError:(NSError **)error
-{
-    uint32_t chunkLength;
-    size_t lengthByteSize = sizeof(chunkLength);
-    size_t chunkSignatureLength = 4;    // Chunk signatre, e.g. IHDR always has a length of 4
-    size_t cyclicRedundancyCodeLenth = 4;
-    if (self.imageData.length < self.dataIndex + lengthByteSize)
-    {
-        return NO;
-    }
-    
-    [self.imageData getBytes:&chunkLength range:NSMakeRange(self.dataIndex, lengthByteSize)];
-    chunkLength = CFSwapInt32HostToBig(chunkLength);
-    if (self.imageData.length < self.dataIndex + lengthByteSize + chunkSignatureLength + chunkLength)
-    {
-        return NO;
-    }
-    self.dataIndex += lengthByteSize;
-    
-    uint32_t ihdrSignature = (73 << 24) | (72 << 16) | (68 << 8) | 82;
-    uint32_t idatSignature = (73 << 24) | (68 << 16) | (65 << 8) | 84;
-    uint32_t iendSignature = (73 << 24) | (69 << 16) | (78 << 8) | 68;
-    
-    uint32_t chunkSignature;
-    [self.imageData getBytes:&chunkSignature range:NSMakeRange(self.dataIndex, chunkSignatureLength)];
-    chunkSignature = CFSwapInt32HostToBig(chunkSignature);
-    self.dataIndex += chunkSignatureLength;
-    
-    if (chunkSignature == ihdrSignature)
-    {
-        [self parseIHDRChunk];
-        if (self.ihdrChunk.interlaceMethod == 0)
-        {
-            *error = [[NSError alloc] init];    // Change this
-            return NO;
-        }
-    }
-    else if (chunkSignature == idatSignature)   //This is the chunk that contains image data
-    {
-//        NSData *compressedData = [self.imageData subdataWithRange:NSMakeRange(self.dataIndex, chunkLength)];
-//        NSData *uncompressedData = [compressedData zlibInflatePartial];
-//        
-//        for (int i=0; i<uncompressedData.length; i++)
-//        {
-//            uint8_t byte;
-//            uint32_t size;
-//            [uncompressedData getBytes:&byte range:NSMakeRange(i, 1)];
-//            [uncompressedData getBytes:&size range:NSMakeRange(i, 4)];
-//            size = CFSwapInt32HostToBig(size);
-//            NSLog(@"%i, %c, %i", byte, byte, size);
-//        }
-
-        
-        
-        self.dataIndex += chunkLength;
-        self.idatChunksRead++;
-        NSUInteger passesComplete = [self evaluateCompletedAdam7Passes];
-        if (self.passesComplete != passesComplete)
-        {
-            self.passesComplete = passesComplete;
-            if ([self.delegate respondsToSelector:@selector(imageDataProvider:completedPass:)])
-            {
-                [self.delegate imageDataProvider:self completedPass:self.passesComplete];
-            }
-        }
-    }
-    else if (chunkSignature == iendSignature)
-    {
-        return NO;
-    }
-    else                                        // Simply skip this chunk
-    {
-        self.dataIndex += chunkLength;
-    }
-    
-    self.dataIndex += cyclicRedundancyCodeLenth;
-    return YES;
-}
-
-- (void)parseIHDRChunk
-{
-    [self.imageData getBytes:&_ihdrChunk.width range:NSMakeRange(self.dataIndex, sizeof(_ihdrChunk.width))];
-    _ihdrChunk.width = CFSwapInt32HostToBig(_ihdrChunk.width);
-    self.dataIndex += sizeof(_ihdrChunk.width);
-    
-    [self.imageData getBytes:&_ihdrChunk.height range:NSMakeRange(self.dataIndex, sizeof(_ihdrChunk.height))];
-    _ihdrChunk.height = CFSwapInt32HostToBig(_ihdrChunk.height);
-    self.dataIndex += sizeof(_ihdrChunk.height);
-    
-    [self.imageData getBytes:&_ihdrChunk.bitDepth range:NSMakeRange(self.dataIndex, 1)];
-    self.dataIndex++;
-    
-    [self.imageData getBytes:&_ihdrChunk.colorType range:NSMakeRange(self.dataIndex, 1)];
-    self.dataIndex++;
-    
-    [self.imageData getBytes:&_ihdrChunk.compressionMethod range:NSMakeRange(self.dataIndex, 1)];
-    self.dataIndex++;
-    
-    [self.imageData getBytes:&_ihdrChunk.filterMethod range:NSMakeRange(self.dataIndex, 1)];
-    self.dataIndex++;
-    
-    [self.imageData getBytes:&_ihdrChunk.interlaceMethod range:NSMakeRange(self.dataIndex, 1)];
-    self.dataIndex++;
-}
-
-- (NSUInteger)evaluateCompletedAdam7Passes
-{
-    uint32_t pass1ChunkCount = ceil(self.ihdrChunk.width / 8.0f) * ceil(self.ihdrChunk.height / 8.0f);
-    uint32_t pass2ChunkCount = ceil((self.ihdrChunk.width-4) / 8.0f) * ceil(self.ihdrChunk.height / 8.0f) + pass1ChunkCount;
-    uint32_t pass3ChunkCount = ceil(self.ihdrChunk.width / 4.0f) * ceil((self.ihdrChunk.height-4) / 8.0f) + pass2ChunkCount;
-    uint32_t pass4ChunkCount = ceil((self.ihdrChunk.width-2) / 4.0f) * ceil(self.ihdrChunk.height / 4.0f) + pass3ChunkCount;
-    uint32_t pass5ChunkCount = ceil(self.ihdrChunk.width / 2.0f) * ceil((self.ihdrChunk.height-2) / 4.0f) + pass4ChunkCount;
-    uint32_t pass6ChunkCount = ceil((self.ihdrChunk.width-1) / 2.0f) * ceil(self.ihdrChunk.height / 2.0f) + pass5ChunkCount;
-    uint32_t pass7ChunkCount = self.ihdrChunk.width * self.ihdrChunk.height;
-    
-    if (self.idatChunksRead >= pass7ChunkCount) return 7;
-    if (self.idatChunksRead >= pass6ChunkCount) return 6;
-    if (self.idatChunksRead >= pass5ChunkCount) return 5;
-    if (self.idatChunksRead >= pass4ChunkCount) return 4;
-    if (self.idatChunksRead >= pass3ChunkCount) return 3;
-    if (self.idatChunksRead >= pass2ChunkCount) return 2;
-    if (self.idatChunksRead >= pass1ChunkCount) return 1;
-    
-    return 0;
 }
 
 #pragma mark - libpng C functions
@@ -292,11 +117,6 @@ void row_callback(png_structp png_ptr, png_bytep new_row, png_uint_32 row_num, i
     /* If the image is interlaced, and you turned on the interlace handler, this function will be called for every row in every pass. Some of these rows will not be changed from the previous pass. When the row is not changed, the new_row variable will be NULL. The rows and passes are called in order, so you don’t really need the row_num and pass, but I’m supplying them because it may make your life easier.  For the non-NULL rows of interlaced images, you must call png_progressive_combine_row() passing in the row and the old row. You can call this function for NULL rows (it will just return) and for non-interlaced images (it just does the memcpy for you) if it will make the code easier. Thus, you can just do this for all cases: */
     
     png_progressive_combine_row(png_ptr, row_pointers[row_num], new_row);
-//    for(int n=0;n<width;n++) {
-//        int pixel = get_pixel((char *)row_pointers[row_num], pixel_depth, n);
-//        if(pixel == 0) printf("0"); else printf("1");
-//    }
-//    printf("\n");
     
     if (new_row != NULL && !selfRef.interlacer.generatingImage)
     {
@@ -355,7 +175,7 @@ void generate_interlaced_image(png_uint_32 row_num, int pass)
         [allData appendData:rowData];
     }
     
-    [selfRef.interlacer updateImageWithCurrentData:allData lastCompletedRow:row_num pass:pass completion:^(UIImage *image, NSError *error) {
+    [selfRef.interlacer updateImageWithCurrentData:allData pass:pass completion:^(UIImage *image, NSError *error) {
         if ([selfRef.delegate respondsToSelector:@selector(imageDataProvider:receivedImage:)])
         {
             [selfRef.delegate imageDataProvider:selfRef receivedImage:image];
@@ -372,50 +192,21 @@ void generate_interlaced_image(png_uint_32 row_num, int pass)
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
-    [_mutableData setLength:0];
-    [_dataChunks removeAllObjects];
-    [_rowDataArray removeAllObjects];
-    self.dataIndex = 0;
-    self.idatChunksRead = 0;
-    self.passesComplete = 0;
-    
     initialize_png_reader();
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
 {
-//    [_mutableData appendData:data];
-    
     int result = process_data((png_bytep)[data bytes], data.length);
     if (result == 1)
     {
         NSLog(@"error");
     }
-    
-//    NSError *error = [self advanceDataIndexPastChunks];
-//    if (error)
-//    {
-//        [self.activeConnection cancel];
-//        if ([self.delegate respondsToSelector:@selector(imageDataProvider:failedWithError:)])
-//        {
-//            [self.delegate imageDataProvider:self failedWithError:error];
-//        }
-//    }
-    
-//    for (int i=0; i<data.length; i++)
-//    {
-//        uint8_t byte;
-//        uint32_t size;
-//        [data getBytes:&byte range:NSMakeRange(i, 1)];
-//        [data getBytes:&size range:NSMakeRange(i, 4)];
-//        size = CFSwapInt32HostToBig(size);
-//        NSLog(@"%i, %c, %i", byte, byte, size);
-//    }
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
-//    self.interlacer = nil;
+    self.interlacer = nil;
 }
 
 @end
