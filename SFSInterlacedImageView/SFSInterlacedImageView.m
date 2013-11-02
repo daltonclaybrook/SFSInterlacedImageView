@@ -59,9 +59,11 @@ static NSTimeInterval const transitionDuration = 1.0f;
     
     if (transitionImage)
     {
+        self.transitioning = YES;
         [UIView transitionWithView:self duration:transitionDuration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
             self.image = transitionImage;
         } completion:^(BOOL finished) {
+            self.transitioning = NO;
             if (finished && self.nextImage)
             {
                 [self animateTransition];
