@@ -11,16 +11,6 @@
 #import "png.h"
 #import "pnginfo.h"
 
-typedef struct {
-    uint32_t width;
-    uint32_t height;
-    uint8_t bitDepth;
-    uint8_t colorType;
-    uint8_t compressionMethod;
-    uint8_t filterMethod;
-    uint8_t interlaceMethod;
-} IHDRChunk;
-
 @interface SFSImageDataProvider () <NSURLConnectionDataDelegate>
 
 @property (nonatomic, strong) NSURLConnection *activeConnection;

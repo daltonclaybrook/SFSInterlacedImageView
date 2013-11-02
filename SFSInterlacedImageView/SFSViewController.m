@@ -44,6 +44,7 @@
     self.loadingLabel.text = @"Loading";
     self.progressView.progress = 0.0f;
     self.imageView.firstPassToGenerate = [self.passSelector selectedSegmentIndex];
+    self.imageView.transitionDuration = 2.0f;
     self.imageView.imageURL = [NSURL URLWithString:@"http://daltonclaybrook.com/future.png"];
 }
 
