@@ -8,13 +8,16 @@
 
 #import <Foundation/Foundation.h>
 
+static NSString * const SFSImageDataProviderDataProgressNotification = @"SFSImageDataProviderDataProgressNotification";
+
 @protocol SFSImageDataProviderDelegate;
 
 @interface SFSImageDataProvider : NSObject
 
 @property (nonatomic, weak) id<SFSImageDataProviderDelegate> delegate;
-@property (nonatomic, strong, readonly) NSURL *imageURL;
+@property (nonatomic, strong) NSURL *imageURL;
 @property (nonatomic) NSTimeInterval minimumImageFetchInterval;
+@property (nonatomic) NSUInteger firstPassToGenerate;
 
 - (instancetype)initWithImageURL:(NSURL *)url;
 - (void)start;

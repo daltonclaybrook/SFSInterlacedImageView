@@ -28,6 +28,10 @@ typedef struct {
 @property (nonatomic, strong) NSDate *lastFetchDate;
 @property (nonatomic) BOOL finalImageBatched;
 
+/****TEST****/
+@property (nonatomic, strong) NSMutableData *imageData;
+@property (nonatomic) long long expectedContentLength;
+
 @end
 
 @implementation SFSImageDataProvider
@@ -44,6 +48,8 @@ typedef struct {
         _minimumImageFetchInterval = 0.7f;
         _lastFetchDate = [NSDate distantPast];
         _finalImageBatched = NO;
+        _firstPassToGenerate = 1;
+        _imageData = [NSMutableData data];
     }
     return self;
 }
@@ -129,7 +135,7 @@ void row_callback(png_structp png_ptr, png_bytep new_row, png_uint_32 row_num, i
     png_progressive_combine_row(png_ptr, row_pointers[row_num], new_row);
     
     NSTimeInterval timeSinceLastFetch = [[NSDate date] timeIntervalSinceDate:selfRef.lastFetchDate];
-    if (timeSinceLastFetch > selfRef.minimumImageFetchInterval && !selfRef.interlacer.generatingImage && pass > 0)
+    if (timeSinceLastFetch > selfRef.minimumImageFetchInterval && !selfRef.interlacer.generatingImage && pass > selfRef.firstPassToGenerate)
     {
         selfRef.lastFetchDate = [NSDate date];
         generate_interlaced_image(pass, NO);
@@ -241,6 +247,8 @@ void generate_interlaced_image(int pass, bool final)
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
+    [self.imageData setLength:0];
+    self.expectedContentLength = response.expectedContentLength;
     initialize_png_reader();
 }
 
@@ -251,6 +259,11 @@ void generate_interlaced_image(int pass, bool final)
     {
         NSLog(@"error");
     }
+    
+    [self.imageData appendData:data];
+    CGFloat progress = MIN(((float)self.imageData.length/(float)self.expectedContentLength), 1.0);
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:SFSImageDataProviderDataProgressNotification object:[NSNumber numberWithFloat:progress]];
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection

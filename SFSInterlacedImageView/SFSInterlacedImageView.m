@@ -27,6 +27,7 @@ static NSTimeInterval const transitionDuration = 1.0f;
 {
     [super awakeFromNib];
     _transitioning = NO;
+    _firstPassToGenerate = 1;
 }
 
 #pragma mark - Properties
@@ -34,10 +35,17 @@ static NSTimeInterval const transitionDuration = 1.0f;
 - (void)setImageURL:(NSURL *)imageURL
 {
     _imageURL = imageURL;
+    self.dataProvider.imageURL = imageURL;
     self.image = nil;
     
     [self.dataProvider cancel];
     [self.dataProvider start];
+}
+
+- (void)setFirstPassToGenerate:(NSUInteger)firstPassToGenerate
+{
+    _firstPassToGenerate = (firstPassToGenerate > 6) ? 6 : firstPassToGenerate;
+    self.dataProvider.firstPassToGenerate = _firstPassToGenerate;
 }
 
 - (SFSImageDataProvider *)dataProvider
@@ -92,6 +100,12 @@ static NSTimeInterval const transitionDuration = 1.0f;
 
 - (void)imageDataProvider:(SFSImageDataProvider *)dataProvider receivedImage:(UIImage *)image
 {
+    if (!self.image)
+    {
+        self.image = image;
+        return;
+    }
+    
     self.nextImage = image;
     if (!self.transitioning)
     {

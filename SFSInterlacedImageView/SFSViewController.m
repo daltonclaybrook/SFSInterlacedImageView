@@ -8,11 +8,14 @@
 
 #import "SFSViewController.h"
 #import "SFSInterlacedImageView.h"
+#import "SFSImageDataProvider.h"
 
 @interface SFSViewController () <SFSInterlacedImageViewDelegate>
 
 @property (strong, nonatomic) IBOutlet SFSInterlacedImageView *imageView;
 @property (weak, nonatomic) IBOutlet UILabel *loadingLabel;
+@property (weak, nonatomic) IBOutlet UISegmentedControl *passSelector;
+@property (weak, nonatomic) IBOutlet UIProgressView *progressView;
 
 @end
 
@@ -22,7 +25,12 @@
 {
     [super viewDidLoad];
     self.imageView.delegate = self;
-    self.imageView.imageURL = [NSURL URLWithString:@"http://daltonclaybrook.com/future.png"];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(imageViewMadeProgress:) name:SFSImageDataProviderDataProgressNotification object:nil];
+}
+
+- (void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)didReceiveMemoryWarning
@@ -34,7 +42,17 @@
 - (IBAction)restartTapped:(id)sender
 {
     self.loadingLabel.text = @"Loading";
+    self.progressView.progress = 0.0f;
+    self.imageView.firstPassToGenerate = [self.passSelector selectedSegmentIndex];
     self.imageView.imageURL = [NSURL URLWithString:@"http://daltonclaybrook.com/future.png"];
+}
+
+#pragma mark - Private
+
+- (void)imageViewMadeProgress:(NSNotification *)notification
+{
+    NSNumber *progress = notification.object;
+    self.progressView.progress = progress.floatValue;
 }
 
 #pragma mark - SFSInterlacedImageViewDelegate

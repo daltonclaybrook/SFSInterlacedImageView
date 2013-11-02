@@ -233,10 +233,10 @@
 			children = (
 				BE7541DE1814726F00F952FA /* SFSInterlacedImageView.h */,
 				BE7541DF1814726F00F952FA /* SFSInterlacedImageView.m */,
-				BE7541E1181472AD00F952FA /* SFSImageInterlacer.h */,
-				BE7541E2181472AD00F952FA /* SFSImageInterlacer.m */,
 				BE7541E4181472CF00F952FA /* SFSImageDataProvider.h */,
 				BE7541E5181472CF00F952FA /* SFSImageDataProvider.mm */,
+				BE7541E1181472AD00F952FA /* SFSImageInterlacer.h */,
+				BE7541E2181472AD00F952FA /* SFSImageInterlacer.m */,
 			);
 			name = ImageView;
 			sourceTree = "<group>";
