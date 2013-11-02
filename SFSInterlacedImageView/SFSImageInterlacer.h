@@ -12,7 +12,9 @@ typedef void (^SFSImageInterlacerCompletionBlock)(UIImage *image, NSError *error
 
 @interface SFSImageInterlacer : NSObject
 
-- (void)createImageFromInterlacedData:(NSData *)data completion:(SFSImageInterlacerCompletionBlock)completion;
-- (void)updateImageWithRow:(NSUInteger)row data:(NSData *)rowData completion:(SFSImageInterlacerCompletionBlock)completion;
+@property (nonatomic) BOOL generatingImage;
+
+- (instancetype)initWithSize:(CGSize)size pixelDepth:(NSUInteger)depth;
+- (void)updateImageWithCurrentData:(NSData *)data pass:(NSUInteger)pass completion:(SFSImageInterlacerCompletionBlock)completion;
 
 @end
