@@ -41,7 +41,7 @@
 
 - (IBAction)restartTapped:(id)sender
 {
-    self.loadingLabel.text = @"Loading";
+    self.loadingLabel.text = @"Loading...";
     self.progressView.progress = 0.0f;
     self.imageView.firstPassToGenerate = [self.passSelector selectedSegmentIndex];
     self.imageView.transitionDuration = 2.0f;
