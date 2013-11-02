@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>B65EE2D8-D6AD-4F6F-946A-DFB080B504A4</string>
+	<key>IDESourceControlProjectName</key>
+	<string>SFSInterlacedImageView</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>FBE36700-1FCC-4B13-98EE-46D17E16BE4A</key>
+		<string>ssh://bitbucket.org/daltonclaybrook/sfsinterlacedimageview.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>SFSInterlacedImageView.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>FBE36700-1FCC-4B13-98EE-46D17E16BE4A</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>ssh://bitbucket.org/daltonclaybrook/sfsinterlacedimageview.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>FBE36700-1FCC-4B13-98EE-46D17E16BE4A</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>FBE36700-1FCC-4B13-98EE-46D17E16BE4A</string>
+			<key>IDESourceControlWCCName</key>
+			<string>SFSInterlacedImageView</string>
+		</dict>
+	</array>
+</dict>
+</plist>
