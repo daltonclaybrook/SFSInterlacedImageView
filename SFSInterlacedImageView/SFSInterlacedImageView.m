@@ -9,8 +9,6 @@
 #import "SFSInterlacedImageView.h"
 #import "SFSImageDataProvider.h"
 
-static NSTimeInterval const transitionDuration = 1.0f;
-
 @interface SFSInterlacedImageView () <SFSImageDataProviderDelegate>
 
 @property (nonatomic, strong) SFSImageDataProvider *dataProvider;
@@ -23,11 +21,54 @@ static NSTimeInterval const transitionDuration = 1.0f;
 
 #pragma mark - View Lifecycle
 
-- (void)awakeFromNib
+- (instancetype)init
 {
-    [super awakeFromNib];
-    _transitioning = NO;
-    _firstPassToGenerate = 1;
+    self = [super init];
+    if (self)
+    {
+        [self SFSInterlacedImageViewCommonInit];
+    }
+    return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)aDecoder
+{
+    self = [super initWithCoder:aDecoder];
+    if (self)
+    {
+        [self SFSInterlacedImageViewCommonInit];
+    }
+    return self;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self)
+    {
+        [self SFSInterlacedImageViewCommonInit];
+    }
+    return self;
+}
+
+- (instancetype)initWithImage:(UIImage *)image
+{
+    self = [super initWithImage:image];
+    if (self)
+    {
+        [self SFSInterlacedImageViewCommonInit];
+    }
+    return self;
+}
+
+- (instancetype)initWithImage:(UIImage *)image highlightedImage:(UIImage *)highlightedImage
+{
+    self = [super initWithImage:image highlightedImage:highlightedImage];
+    if (self)
+    {
+        [self SFSInterlacedImageViewCommonInit];
+    }
+    return self;
 }
 
 #pragma mark - Properties
@@ -60,6 +101,13 @@ static NSTimeInterval const transitionDuration = 1.0f;
 
 #pragma mark - Private
 
+- (void)SFSInterlacedImageViewCommonInit
+{
+    _transitioning = NO;
+    _firstPassToGenerate = 1;
+    _transitionDuration = 1.0f;
+}
+
 - (void)animateTransition
 {
     UIImage *transitionImage = self.nextImage;
@@ -68,7 +116,7 @@ static NSTimeInterval const transitionDuration = 1.0f;
     if (transitionImage)
     {
         self.transitioning = YES;
-        [UIView transitionWithView:self duration:transitionDuration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+        [UIView transitionWithView:self duration:self.transitionDuration options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
             self.image = transitionImage;
         } completion:^(BOOL finished) {
             self.transitioning = NO;

@@ -14,6 +14,7 @@
 
 @property (nonatomic, strong) NSURL *imageURL;
 @property (nonatomic, weak) id<SFSInterlacedImageViewDelegate> delegate;
+@property (nonatomic) CGFloat transitionDuration;
 @property (nonatomic) NSUInteger firstPassToGenerate;   // Number 0 - 6
 
 @end
