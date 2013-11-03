@@ -19,7 +19,7 @@
 @property (nonatomic) BOOL finalImageBatched;
 
 /****TEST****/
-@property (nonatomic, strong) NSMutableData *imageData;
+@property (nonatomic) long long bytesReceived;
 @property (nonatomic) long long expectedContentLength;
 
 @end
@@ -39,7 +39,6 @@
         _lastFetchDate = [NSDate distantPast];
         _finalImageBatched = NO;
         _firstPassToGenerate = 1;
-        _imageData = [NSMutableData data];
     }
     return self;
 }
@@ -76,7 +75,7 @@ int pixel_depth;
 
 png_structp png_ptr;
 png_infop   info_ptr;
-png_bytep * row_pointers;
+png_bytepp row_pointers;
 
 /* This function is called (as set by png_set_progressive_read_fn() above) when enough data has been supplied so all of the header has been read.  */
 void info_callback(png_structp png_ptr, png_infop info) {
@@ -91,7 +90,7 @@ void info_callback(png_structp png_ptr, png_infop info) {
     pixel_depth = info->pixel_depth;
     
     selfRef.interlacer = [[SFSImageInterlacer alloc] initWithSize:CGSizeMake(width, height) pixelDepth:pixel_depth];
-    row_pointers = (png_bytep *)malloc(sizeof(png_bytep *) * info->height);
+    row_pointers = (png_bytepp)malloc(sizeof(png_bytep) * info->height);
     for(size_t n=0;n<info->height;n++) {
         row_pointers[n] = (png_bytep)malloc(info->rowbytes);
     }
@@ -145,6 +144,10 @@ void end_callback(png_structp png_ptr, png_infop info) {
     {
         generate_interlaced_image(6, YES);
         png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+        
+        for(size_t n=0;n<height;n++) {
+            free(row_pointers[n]);
+        }
         free(row_pointers);
     }
     else
@@ -204,6 +207,9 @@ void generate_interlaced_image(int pass, bool final)
                 weakSelf.finalImageBatched = NO;
                 generate_interlaced_image(pass, YES);
                 png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+                for(size_t n=0;n<height;n++) {
+                    free(row_pointers[n]);
+                }
                 free(row_pointers);
                 weakSelf.interlacer = nil;
             }
@@ -237,7 +243,7 @@ void generate_interlaced_image(int pass, bool final)
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
-    [self.imageData setLength:0];
+    self.bytesReceived = 0;
     self.expectedContentLength = response.expectedContentLength;
     initialize_png_reader();
 }
@@ -250,8 +256,8 @@ void generate_interlaced_image(int pass, bool final)
         NSLog(@"error");
     }
     
-    [self.imageData appendData:data];
-    CGFloat progress = MIN(((float)self.imageData.length/(float)self.expectedContentLength), 1.0);
+    self.bytesReceived += data.length;
+    CGFloat progress = MIN(((float)self.bytesReceived/(float)self.expectedContentLength), 1.0);
     
     [[NSNotificationCenter defaultCenter] postNotificationName:SFSImageDataProviderDataProgressNotification object:[NSNumber numberWithFloat:progress]];
 }
