@@ -65,16 +65,18 @@ static NSUInteger bytesPerPixel = 4;     // Hardcoded to 4: R G B A
     {
         for (int x=0; x<passImageSize.width; x++)
         {
-            NSUInteger offset = (y*self.imageSize.width*block_width[pass]*currentBytesPerPixel) + (x*block_width[pass]*currentBytesPerPixel);
+            NSUInteger blockWidth = block_width[pass];
+            NSUInteger offset = (y*self.imageSize.width*blockWidth*currentBytesPerPixel) + (x*blockWidth*currentBytesPerPixel);
             NSUInteger bufferOffset = (y*passImageSize.width*bytesPerPixel) + (x*bytesPerPixel);
             
-            uint8_t red, green, blue;
+            uint32_t rgba;
             uint8_t alpha = 255;
             
-            [data getBytes:&red range:NSMakeRange(offset, 1)];
-            [data getBytes:&green range:NSMakeRange(offset+1, 1)];
-            [data getBytes:&blue range:NSMakeRange(offset+2, 1)];
-            if (hasAlpha) [data getBytes:&alpha range:NSMakeRange(offset+3, 1)];
+            [data getBytes:&rgba range:NSMakeRange(offset, currentBytesPerPixel)];
+            uint8_t red = (rgba >> 0) & 0xFF;
+            uint8_t green = (rgba >> 8) & 0xFF;
+            uint8_t blue = (rgba >> 16) & 0xFF;
+            if (hasAlpha) alpha = (rgba >> 24) & 0xFF;
             
             buffer[bufferOffset] = red;
             buffer[bufferOffset+1] = green;
